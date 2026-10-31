@@ -2,7 +2,8 @@
 import { useState } from "react";
 import keycloak from "./keycloak.js";
 
-const API_URL = "http://localhost:9092/api/ente";
+const API_URL = "http://localhost:9092/api/ente/user";
+const API_ADMIN = "http://localhost:9092/api/ente/admin";
 
 export default function App() {
   const [result, setResult] = useState("");
@@ -40,6 +41,38 @@ export default function App() {
     }
   }
 
+  async function callAdmin() {
+    setLoading(true);
+    setResult("");
+
+    try {
+      // Renueva el token si está próximo a expirar.
+      await keycloak.updateToken(30);
+
+      const response = await fetch(API_ADMIN, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${keycloak.token}`,
+          Accept: "application/json",
+        },
+      });
+
+      const body = await response.text();
+
+      if (!response.ok) {
+        throw new Error(
+          `HTTP ${response.status}: ${body}`
+        );
+      }
+
+      setResult(body || "Petición exitosa.");
+    } catch (error) {
+      setResult(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <main style={{ padding: "2rem", fontFamily: "sans-serif" }}>
       <h1>React + Keycloak + API Gateway</h1>
@@ -54,6 +87,10 @@ export default function App() {
 
       <button onClick={callGateway} disabled={loading}>
         {loading ? "Consultando..." : "Consultar Ente"}
+      </button>
+      <hr></hr>
+      <button onClick={callAdmin} disabled={loading}>
+        {loading ? "Consultando..." : "Consultar Admin"}
       </button>
 
       <button
